@@ -8,8 +8,8 @@ RUN CGO_ENABLED=0 \
     GOOS=linux \
     go build \
     -ldflags="-X main.Version=$VERSION" \
-    -o /protoc-gen-listify .
+    -o /protoc-gen-go-listify .
 
 FROM scratch
-COPY --from=builder /protoc-gen-listify /
-ENTRYPOINT ["/protoc-gen-listify"]
+COPY --from=builder /protoc-gen-go-listify /
+ENTRYPOINT ["/protoc-gen-go-listify"]
