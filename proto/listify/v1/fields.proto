@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package listify.v1;
+
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/pentops/protoc-gen-listify/listify/v1;listify";
+
+message Page {
+  string next_page          = 1;
+  bool   final_page         = 2;
+  int64  total_page_records = 3;
+  int64  total_records      = 4;
+}
+
+message Search {
+  string query = 1;
+}
+
+message Sort {
+  string field      = 1;
+  bool   descending = 2;
+}
+
+message Filter {
+  string field = 1;
+
+  oneof filter_value {
+    option (validate.required) = true;
+
+    string value = 2;
+    Range  range = 3;
+  }
+}
+
+message Range {
+  oneof type {
+    option (validate.required) = true;
+
+    DoubleRange   double   =  1;
+    Fixed32Range  fixed32  =  2;
+    Fixed64Range  fixed64  =  3;
+    FloatRange    float    =  4;
+    Int32Range    int32    =  5;
+    Int64Range    int64    =  6;
+    SFixed32Range sfixed32 =  7;
+    SFixed64Range sfixed64 =  8;
+    SInt32Range   sint32   =  9;
+    SInt64Range   sint64   = 10;
+    UInt32Range   uint32   = 11;
+    UInt64Range   uint64   = 12;
+
+    TimestampRange timestamp = 20;
+    DateRange      date      = 21;
+  }
+}
+
+message DoubleRange {
+  double min = 1;
+  double max = 2;
+}
+
+message Fixed32Range {
+  fixed32 min = 1;
+  fixed32 max = 2;
+}
+
+message Fixed64Range {
+  fixed64 min = 1;
+  fixed64 max = 2;
+}
+
+message FloatRange {
+  float min = 1;
+  float max = 2;
+}
+
+message Int32Range {
+  int32 min = 1;
+  int32 max = 2;
+}
+
+message Int64Range {
+  int64 min = 1;
+  int64 max = 2;
+}
+
+message SFixed32Range {
+  sfixed32 min = 1;
+  sfixed32 max = 2;
+}
+
+message SFixed64Range {
+  sfixed64 min = 1;
+  sfixed64 max = 2;
+}
+
+message SInt32Range {
+  sint32 min = 1;
+  sint32 max = 2;
+}
+
+message SInt64Range {
+  sint64 min = 1;
+  sint64 max = 2;
+}
+
+message UInt32Range {
+  uint32 min = 1;
+  uint32 max = 2;
+}
+
+message UInt64Range {
+  uint64 min = 1;
+  uint64 max = 2;
+}
+
+message TimestampRange {
+  google.protobuf.Timestamp min = 1;
+  google.protobuf.Timestamp max = 2;
+}
+
+message DateRange {
+  // Valid values for min are: YYYY, YYYY-MM, or YYYY-MM-DD
+  string min = 1 [
+    (validate.rules).string.pattern = "([0-9]{4}-?([0-9]{2})?-?([0-9]{2})?)"
+  ];
+
+  // Valid values for max are: YYYY, YYYY-MM, or YYYY-MM-DD
+  string max = 2 [
+    (validate.rules).string.pattern = "([0-9]{4}-?([0-9]{2})?-?([0-9]{2})?)"
+  ];
+}
