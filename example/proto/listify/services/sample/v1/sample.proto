@@ -121,10 +121,11 @@ message ListWidgetsRequest {
   // results. The format of this field is not considered for backwards
   // compatibility.
   string page = 30;
+  int64 limit = 31;
 
-  listify.v1.Search          search  = 31;
-  repeated listify.v1.Sort   sorts   = 32;
-  repeated listify.v1.Filter filters = 33;
+  listify.v1.Search          search  = 41;
+  repeated listify.v1.Sort   sorts   = 42;
+  repeated listify.v1.Filter filters = 43;
 }
 
 message ListWidgetsResponse{

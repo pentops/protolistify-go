@@ -986,6 +986,8 @@ func (m *ListWidgetsRequest) validate(all bool) error {
 
 	// no validation rules for Page
 
+	// no validation rules for Limit
+
 	if all {
 		switch v := interface{}(m.GetSearch()).(type) {
 		case interface{ ValidateAll() error }:
