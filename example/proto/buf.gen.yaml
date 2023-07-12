@@ -1,0 +1,18 @@
+version: v1
+plugins:
+  - name: go
+    out: ./gen
+
+  - name: go-grpc
+    out: ./gen
+
+  - name: grpc-gateway
+    out: ./gen
+
+  - name: validate
+    out: ./gen
+    opt:
+      - lang=go
+
+  - name: go-listify
+    out: ./gen

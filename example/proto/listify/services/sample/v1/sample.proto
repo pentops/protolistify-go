@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package listify.services.sample.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "listify/v1/annotations.proto";
+import "listify/v1/fields.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/pentops/protoc-gen-listify/example/api/services/sample/v1;sspb";
+
+service SampleService {
+  rpc GetWidget(GetWidgetRequest) returns (GetWidgetResponse) {
+    option (google.api.http) = {
+      get: "/sample/v1/widget/{id}"
+    };
+  }
+
+  rpc ListWidgets(ListWidgetsRequest) returns (ListWidgetsResponse) {
+    option (google.api.http) = {
+      post: "/sample/v1/widgets"
+      body: "*"
+    };
+
+    option (listify.v1.api) = {
+      enable: true
+    };
+  }
+}
+
+message GetWidgetRequest {
+  string id = 1 [
+    (validate.rules).string.uuid = true
+  ];
+}
+
+message GetWidgetResponse {
+  Widget widget = 1 [
+    (validate.rules).message.required = true
+  ];
+}
+
+message Widget {
+  string id = 1 [
+    (validate.rules).string.uuid = true
+  ];
+
+  string customer_id = 2 [
+    (validate.rules).string.uuid = true,
+    (listify.v1.rules).string.foreign_key.uuid.filterable = true
+  ];
+
+  WidgetDetails details = 3 [
+    (validate.rules).message.required = true
+  ];
+
+  WidgetStatus status = 4 [
+    (validate.rules).enum = { defined_only: true not_in: [0] },
+    (listify.v1.rules).enum.filterable = true
+  ];
+
+  google.protobuf.Timestamp created = 5 [
+    (validate.rules).timestamp.required = true,
+    (listify.v1.rules).timestamp = {filterable: true, sortable: true}
+  ];
+}
+
+enum WidgetStatus {
+  WIDGET_STATUS_UNSPECIFIED = 0;
+  WIDGET_STATUS_REQUESTED   = 1;
+  WIDGET_STATUS_CREATED     = 2;
+}
+
+message WidgetDetails {
+  string name = 1 [
+    (validate.rules).string.min_len = 1,
+    (listify.v1.rules).string.open_text.searchable = true
+  ];
+
+  int64 weight = 2 [
+    (validate.rules).int64.gt = 0,
+    (listify.v1.rules).int64 = {filterable: true, sortable: true}
+  ];
+
+  bool special = 3 [
+    (listify.v1.rules).bool.filterable = true
+  ];
+
+  oneof type {
+    option (validate.required) = true;
+    option (listify.v1.oneof_rules).filterable = true;
+
+    SquareWidget square = 4;
+    RoundWidget round = 5;
+  }
+}
+
+message SquareWidget {
+  int64 width = 1 [
+    (validate.rules).int64.gt = 0,
+    (listify.v1.rules).int64 = {filterable: true, sortable: true}
+  ];
+
+  int64 height = 2 [
+    (validate.rules).int64.gt = 0,
+    (listify.v1.rules).int64 = {filterable: true, sortable: true}
+  ];
+}
+
+message RoundWidget {
+  int64 diameter = 1 [
+    (validate.rules).int64.gt = 0,
+    (listify.v1.rules).int64 = {filterable: true, sortable: true}
+  ];
+}
+
+
+message ListWidgetsRequest {
+  // Set to the value of next_page in a response to get the next set of
+  // results. The format of this field is not considered for backwards
+  // compatibility.
+  string page = 30;
+  int64 limit = 31;
+
+  listify.v1.Search          search  = 41;
+  repeated listify.v1.Sort   sorts   = 42;
+  repeated listify.v1.Filter filters = 43;
+}
+
+message ListWidgetsResponse{
+  repeated Widget widgets = 1;
+  listify.v1.Page page = 2;
+}
