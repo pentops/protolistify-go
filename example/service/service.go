@@ -73,6 +73,11 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 		return nil, err
 	}
 
+	err = req.ValidateFilters()
+	if err != nil {
+		return nil, err
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -86,6 +91,12 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 
 	var stmts []string
 	var args []interface{}
+
+	stmts, args, err = req.FilterStatements()
+	if err != nil {
+		log.Printf("failed to get filter statements: %s", err)
+		return nil, status.Error(codes.Internal, "failed to list widgets")
+	}
 
 	if req.Page != "" {
 		decoded, err := base64.StdEncoding.DecodeString(req.Page)
