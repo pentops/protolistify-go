@@ -3,11 +3,13 @@
 package sspb
 
 import (
+	bytes "bytes"
 	errors "errors"
 	fmt "fmt"
 	v1 "github.com/pentops/protoc-gen-listify/listify/v1"
 	regexp "regexp"
 	strconv "strconv"
+	strings "strings"
 	time "time"
 )
 
@@ -496,12 +498,12 @@ func WidgetDetails_ValidType(f *v1.Filter) error {
 
 func (r *WidgetDetails) ValidateFilters(filters []*v1.Filter) error {
 	validFilters := map[string]func(*v1.Filter) error{
-		"width":    ListifyFilter_ValidInt64,
-		"height":   ListifyFilter_ValidInt64,
-		"diameter": ListifyFilter_ValidInt64,
 		"type":     WidgetDetails_ValidType,
 		"weight":   ListifyFilter_ValidInt64,
 		"special":  ListifyFilter_ValidBool,
+		"width":    ListifyFilter_ValidInt64,
+		"height":   ListifyFilter_ValidInt64,
+		"diameter": ListifyFilter_ValidInt64,
 	}
 
 	failedFilters := []string{}
@@ -544,15 +546,15 @@ func Widget_ValidStatus(f *v1.Filter) error {
 
 func (r *Widget) ValidateFilters(filters []*v1.Filter) error {
 	validFilters := map[string]func(*v1.Filter) error{
-		"diameter":    ListifyFilter_ValidInt64,
-		"type":        WidgetDetails_ValidType,
-		"weight":      ListifyFilter_ValidInt64,
-		"special":     ListifyFilter_ValidBool,
 		"status":      Widget_ValidStatus,
 		"created":     ListifyFilter_ValidTimestamp,
-		"customer_id": ListifyFilter_ValidUUID,
+		"weight":      ListifyFilter_ValidInt64,
 		"width":       ListifyFilter_ValidInt64,
 		"height":      ListifyFilter_ValidInt64,
+		"diameter":    ListifyFilter_ValidInt64,
+		"type":        WidgetDetails_ValidType,
+		"customer_id": ListifyFilter_ValidUUID,
+		"special":     ListifyFilter_ValidBool,
 	}
 
 	failedFilters := []string{}
@@ -578,15 +580,15 @@ func (r *Widget) ValidateFilters(filters []*v1.Filter) error {
 
 func (r *ListWidgetsRequest) ValidateFilters() error {
 	validFilters := map[string]func(*v1.Filter) error{
-		"special":     ListifyFilter_ValidBool,
-		"status":      Widget_ValidStatus,
 		"diameter":    ListifyFilter_ValidInt64,
-		"customer_id": ListifyFilter_ValidUUID,
-		"height":      ListifyFilter_ValidInt64,
-		"created":     ListifyFilter_ValidTimestamp,
-		"type":        WidgetDetails_ValidType,
 		"weight":      ListifyFilter_ValidInt64,
 		"width":       ListifyFilter_ValidInt64,
+		"status":      Widget_ValidStatus,
+		"created":     ListifyFilter_ValidTimestamp,
+		"type":        WidgetDetails_ValidType,
+		"special":     ListifyFilter_ValidBool,
+		"height":      ListifyFilter_ValidInt64,
+		"customer_id": ListifyFilter_ValidUUID,
 	}
 
 	failedFilters := []string{}
@@ -610,263 +612,251 @@ func (r *ListWidgetsRequest) ValidateFilters() error {
 	return nil
 }
 
-func (r *ListWidgetsRequest) FilterStatements() ([]string, []interface{}, error) {
-	return r.FilterStatementsWithOrdinal(1)
-}
+func (r *ListWidgetsRequest) FilterStatements() ([]string, []interface{}) {
+	stmts, args := r.FilterStatementsWithPlaceholders()
 
-func (r *ListWidgetsRequest) FilterStatementsWithOrdinal(startingOrdinal int) ([]string, []interface{}, error) {
+	ordinal := 1
+	for i, stmt := range stmts {
+		if strings.Index(stmt, "?") == -1 {
+			continue
+		}
+
+		buf := &bytes.Buffer{}
+		for {
+			p := strings.Index(stmt, "?")
+			if p == -1 {
+				break
+			}
+
+			if len(stmt[p:]) > 1 && stmt[p:p+2] == "??" { // escape ?? => ?
+				buf.WriteString(stmt[:p])
+				buf.WriteString("?")
+				if len(stmt[p:]) == 1 {
+					break
+				}
+				stmt = stmt[p+2:]
+			} else {
+				buf.WriteString(stmt[:p])
+				buf.WriteString(fmt.Sprintf("$%d", ordinal))
+				stmt = stmt[p+1:]
+				ordinal++
+			}
+		}
+
+		stmts[i] = buf.String()
+	}
+
+	return stmts, args
+}
+func (r *ListWidgetsRequest) FilterStatementsWithPlaceholders() ([]string, []interface{}) {
 	var statements []string
 	var args []interface{}
 
-	ordinal := startingOrdinal
 	for _, filter := range r.Filters {
 		if filter.GetRange() != nil {
 			switch r := filter.GetRange().GetType().(type) {
 			case *v1.Range_Double:
 				if r.Double.Min != nil && r.Double.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Double.Min.Value, r.Double.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Double.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Double.Min.Value)
-						ordinal++
 					}
 					if r.Double.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Double.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Fixed32:
 				if r.Fixed32.Min != nil && r.Fixed32.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Fixed32.Min.Value, r.Fixed32.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Fixed32.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Fixed32.Min.Value)
-						ordinal++
 					}
 					if r.Fixed32.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Fixed32.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Fixed64:
 				if r.Fixed64.Min != nil && r.Fixed64.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Fixed64.Min.Value, r.Fixed64.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Fixed64.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Fixed64.Min.Value)
-						ordinal++
 					}
 					if r.Fixed64.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Fixed64.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Float:
 				if r.Float.Min != nil && r.Float.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Float.Min.Value, r.Float.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Float.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Float.Min.Value)
-						ordinal++
 					}
 					if r.Float.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Float.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Int32:
 				if r.Int32.Min != nil && r.Int32.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Int32.Min.Value, r.Int32.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Int32.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Int32.Min.Value)
-						ordinal++
 					}
 					if r.Int32.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Int32.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Int64:
 				if r.Int64.Min != nil && r.Int64.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Int64.Min.Value, r.Int64.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Int64.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Int64.Min.Value)
-						ordinal++
 					}
 					if r.Int64.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Int64.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Sfixed32:
 				if r.Sfixed32.Min != nil && r.Sfixed32.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Sfixed32.Min.Value, r.Sfixed32.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Sfixed32.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Sfixed32.Min.Value)
-						ordinal++
 					}
 					if r.Sfixed32.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Sfixed32.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Sfixed64:
 				if r.Sfixed64.Min != nil && r.Sfixed64.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Sfixed64.Min.Value, r.Sfixed64.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Sfixed64.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Sfixed64.Min.Value)
-						ordinal++
 					}
 					if r.Sfixed64.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Sfixed64.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Sint32:
 				if r.Sint32.Min != nil && r.Sint32.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Sint32.Min.Value, r.Sint32.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Sint32.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Sint32.Min.Value)
-						ordinal++
 					}
 					if r.Sint32.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Sint32.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Sint64:
 				if r.Sint64.Min != nil && r.Sint64.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Sint64.Min.Value, r.Sint64.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Sint64.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Sint64.Min.Value)
-						ordinal++
 					}
 					if r.Sint64.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Sint64.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Uint32:
 				if r.Uint32.Min != nil && r.Uint32.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Uint32.Min.Value, r.Uint32.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Uint32.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Uint32.Min.Value)
-						ordinal++
 					}
 					if r.Uint32.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Uint32.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Uint64:
 				if r.Uint64.Min != nil && r.Uint64.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Uint64.Min.Value, r.Uint64.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Uint64.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Uint64.Min.Value)
-						ordinal++
 					}
 					if r.Uint64.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Uint64.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Date:
 				if r.Date.Min != nil && r.Date.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Date.Min.Value, r.Date.Max.Value)
-					ordinal += 2
 				} else {
 					if r.Date.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Date.Min.Value)
-						ordinal++
 					}
 					if r.Date.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Date.Max.Value)
-						ordinal++
 					}
 				}
 			case *v1.Range_Timestamp:
 				if r.Timestamp.Min != nil && r.Timestamp.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= $%d AND %s <= $%d`, filter.Field, ordinal, filter.Field, ordinal+1))
+					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
 					args = append(args, r.Timestamp.Min.AsTime(), r.Timestamp.Max.AsTime())
-					ordinal += 2
 				} else {
 					if r.Timestamp.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
 						args = append(args, r.Timestamp.Min.AsTime())
-						ordinal++
 					}
 					if r.Timestamp.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= $%d`, filter.Field, ordinal))
+						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
 						args = append(args, r.Timestamp.Max.AsTime())
-						ordinal++
 					}
 				}
 			}
 		} else {
-			statements = append(statements, fmt.Sprintf("%s = $%d", filter.Field, ordinal))
+			statements = append(statements, fmt.Sprintf("%s = ?", filter.Field))
 			args = append(args, filter.GetValue())
-			ordinal++
 		}
 	}
 
-	return statements, args, nil
+	return statements, args
 }
