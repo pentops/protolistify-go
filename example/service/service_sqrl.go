@@ -6,35 +6,41 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
+	sq "github.com/elgris/sqrl"
 	sspb "github.com/pentops/protoc-gen-listify/example/api/services/sample/v1"
 	"github.com/pentops/protoc-gen-listify/listify/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"gopkg.daemonl.com/sqrlx"
 )
 
-// A sample service implementation that uses listfy with bare sql
-type Service struct {
+// An alternate example of a service implementation that uses listify with sqrl
+type ServiceSqrl struct {
 	*sspb.UnimplementedSampleServiceServer
 
-	db              *sql.DB
+	db              *sqrlx.Wrapper
 	defaultPageSize int
 	maxPageSize     int
 }
 
-func NewService(db *sql.DB) *Service {
-	return &Service{
+func NewServiceSqrl(conn sqrlx.Connection) (*ServiceSqrl, error) {
+	db, err := sqrlx.New(conn, sq.Dollar)
+	if err != nil {
+		panic(err)
+	}
+
+	return &ServiceSqrl{
 		db:              db,
 		defaultPageSize: 5,
 		maxPageSize:     100,
-	}
+	}, nil
 }
 
-func (s *Service) GetWidget(ctx context.Context, req *sspb.GetWidgetRequest) (*sspb.GetWidgetResponse, error) {
+func (s *ServiceSqrl) GetWidget(ctx context.Context, req *sspb.GetWidgetRequest) (*sspb.GetWidgetResponse, error) {
 	log.Println("getting widget")
 
 	err := req.Validate()
@@ -42,23 +48,20 @@ func (s *Service) GetWidget(ctx context.Context, req *sspb.GetWidgetRequest) (*s
 		return nil, err
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Commit()
+	q := sq.
+		Select("id", "customer_id", "details", "status", "created").
+		From("widgets").
+		Where("id = ?", req.Id)
 
-	q := `
-	SELECT
-		id,
-		customer_id,
-		details,
-		status,
-		created
-	FROM widgets
-	WHERE id = $1`
+	var widgets []*sspb.Widget
+	err = s.db.Transact(ctx, nil, func(ctx context.Context, tx sqrlx.Transaction) error {
+		widgets, err = s.getWidgets(ctx, tx, q)
+		if err != nil {
+			return err
+		}
 
-	widgets, err := s.getWidgets(ctx, tx, q, []interface{}{req.Id})
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +69,7 @@ func (s *Service) GetWidget(ctx context.Context, req *sspb.GetWidgetRequest) (*s
 	return &sspb.GetWidgetResponse{Widget: widgets[0]}, nil
 }
 
-func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest) (*sspb.ListWidgetsResponse, error) {
+func (s *ServiceSqrl) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest) (*sspb.ListWidgetsResponse, error) {
 	log.Println("listing widgets")
 
 	err := req.Validate()
@@ -79,13 +82,15 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 		return nil, err
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Commit()
+	var total int64
+	err = s.db.Transact(ctx, nil, func(ctx context.Context, tx sqrlx.Transaction) error {
+		total, err = s.totalWidgets(ctx, tx)
+		if err != nil {
+			return err
+		}
 
-	total, err := s.totalWidgets(ctx, tx)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -103,32 +108,30 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 		args = append(args, decoded)
 	}
 
-	q := `
-	SELECT
-		id,
-		customer_id,
-		details,
-		status,
-		created
-	FROM widgets`
-
-	if len(args) > 0 {
-		q += "\n WHERE " + strings.Join(stmts, " AND ")
-	}
-
-	q += "\n ORDER BY created"
-
 	limit := int64(s.defaultPageSize)
 	if req.Limit > 0 && req.Limit <= int64(s.maxPageSize) {
 		limit = req.Limit
 	}
 
-	q += fmt.Sprintf("\n LIMIT %d", limit+1)
+	q := sq.
+		Select("id", "customer_id", "details", "status", "created").
+		From("widgets").
+		OrderBy("created DESC").
+		Limit(uint64(limit))
 
-	widgets, err := s.getWidgets(ctx, tx, q, args)
-	if err != nil {
-		return nil, err
+	for i := range stmts {
+		q.Where(stmts[i], args[i])
 	}
+
+	var widgets []*sspb.Widget
+	err = s.db.Transact(ctx, nil, func(ctx context.Context, tx sqrlx.Transaction) error {
+		widgets, err = s.getWidgets(ctx, tx, q)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 	page := &listify.Page{
 		NextPage:         "",
@@ -153,11 +156,13 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 	return resp, nil
 }
 
-func (s *Service) totalWidgets(ctx context.Context, tx *sql.Tx) (int64, error) {
-	q := "SELECT COUNT(*) FROM widgets"
+func (s *ServiceSqrl) totalWidgets(ctx context.Context, tx sqrlx.Transaction) (int64, error) {
+	q := sq.
+		Select("COUNT(*)").
+		From("widgets")
 
 	var total int64
-	err := tx.QueryRowContext(ctx, q).Scan(&total)
+	err := tx.QueryRow(ctx, q).Scan(&total)
 	if err != nil {
 		log.Printf("failed to scan total: %s", err)
 		return 0, status.Error(codes.Internal, "failed to list widgets")
@@ -166,8 +171,8 @@ func (s *Service) totalWidgets(ctx context.Context, tx *sql.Tx) (int64, error) {
 	return total, nil
 }
 
-func (s *Service) getWidgets(ctx context.Context, tx *sql.Tx, query string, args []interface{}) ([]*sspb.Widget, error) {
-	rows, err := tx.QueryContext(ctx, query, args...)
+func (s *ServiceSqrl) getWidgets(ctx context.Context, tx sqrlx.Transaction, query sqrlx.Sqlizer) ([]*sspb.Widget, error) {
+	rows, err := tx.Query(ctx, query)
 	if err != nil {
 		log.Printf("failed to query widgets: %s", err)
 		return nil, status.Error(codes.Internal, "failed to list widgets")
