@@ -3,6 +3,7 @@ module github.com/pentops/protoc-gen-listify
 go 1.20
 
 require (
+	github.com/elgris/sqrl v0.0.0-20190909141434-5a439265eeec
 	github.com/envoyproxy/protoc-gen-validate v1.0.2
 	github.com/gomicro/blockit v0.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
@@ -13,6 +14,7 @@ require (
 	google.golang.org/grpc v1.56.2
 	google.golang.org/protobuf v1.31.0
 	gopkg.daemonl.com/envconf v0.0.0-20220909014755-d65ec77bd452
+	gopkg.daemonl.com/sqrlx v0.0.25
 )
 
 require (
