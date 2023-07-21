@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// A sample service implementation that uses listfy with bare sql
 type Service struct {
 	*sspb.UnimplementedSampleServiceServer
 
@@ -57,7 +58,7 @@ func (s *Service) GetWidget(ctx context.Context, req *sspb.GetWidgetRequest) (*s
 	FROM widgets
 	WHERE id = $1`
 
-	widgets, err := getWidgets(ctx, tx, q, []interface{}{req.Id})
+	widgets, err := s.getWidgets(ctx, tx, q, []interface{}{req.Id})
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +85,7 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 	}
 	defer tx.Commit()
 
-	total, err := totalWidgets(ctx, tx)
+	total, err := s.totalWidgets(ctx, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +125,7 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 
 	q += fmt.Sprintf("\n LIMIT %d", limit+1)
 
-	widgets, err := getWidgets(ctx, tx, q, args)
+	widgets, err := s.getWidgets(ctx, tx, q, args)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +153,7 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 	return resp, nil
 }
 
-func totalWidgets(ctx context.Context, tx *sql.Tx) (int64, error) {
+func (s *Service) totalWidgets(ctx context.Context, tx *sql.Tx) (int64, error) {
 	q := "SELECT COUNT(*) FROM widgets"
 
 	var total int64
@@ -165,7 +166,7 @@ func totalWidgets(ctx context.Context, tx *sql.Tx) (int64, error) {
 	return total, nil
 }
 
-func getWidgets(ctx context.Context, tx *sql.Tx, query string, args []interface{}) ([]*sspb.Widget, error) {
+func (s *Service) getWidgets(ctx context.Context, tx *sql.Tx, query string, args []interface{}) ([]*sspb.Widget, error) {
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		log.Printf("failed to query widgets: %s", err)
