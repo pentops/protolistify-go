@@ -130,24 +130,24 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 		return nil, err
 	}
 
-	nextPage := ""
-	finalPage := true
+	page := &listify.Page{
+		NextPage:         "",
+		FinalPage:        true,
+		TotalPageRecords: int64(len(widgets)),
+		TotalRecords:     total,
+	}
+
 	if int64(len(widgets)) > limit {
 		last := widgets[len(widgets)-1]
 		widgets = widgets[:len(widgets)-1]
 
-		nextPage = base64.StdEncoding.EncodeToString([]byte(last.Created.AsTime().Format(time.RFC3339Nano)))
-		finalPage = false
+		page.NextPage = base64.StdEncoding.EncodeToString([]byte(last.Created.AsTime().Format(time.RFC3339Nano)))
+		page.FinalPage = false
 	}
 
 	resp := &sspb.ListWidgetsResponse{
 		Widgets: widgets,
-		Page: &listify.Page{
-			NextPage:         nextPage,
-			FinalPage:        finalPage,
-			TotalPageRecords: int64(len(widgets)),
-			TotalRecords:     total,
-		},
+		Page:    page,
 	}
 
 	return resp, nil
