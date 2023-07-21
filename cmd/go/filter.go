@@ -511,6 +511,7 @@ func genFilterStatementMethods(gen *protogen.Plugin, g *protogen.GeneratedFile, 
 	g.P()
 	g.P("return stmts, args")
 	g.P("}")
+	g.P()
 
 	g.P("func (r *", receiver, ") FilterStatementsWithPlaceholders() ([]string, []interface{}){")
 	g.P("var statements []string")

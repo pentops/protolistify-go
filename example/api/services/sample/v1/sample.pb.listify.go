@@ -498,12 +498,12 @@ func WidgetDetails_ValidType(f *v1.Filter) error {
 
 func (r *WidgetDetails) ValidateFilters(filters []*v1.Filter) error {
 	validFilters := map[string]func(*v1.Filter) error{
-		"type":     WidgetDetails_ValidType,
-		"weight":   ListifyFilter_ValidInt64,
 		"special":  ListifyFilter_ValidBool,
 		"width":    ListifyFilter_ValidInt64,
 		"height":   ListifyFilter_ValidInt64,
 		"diameter": ListifyFilter_ValidInt64,
+		"type":     WidgetDetails_ValidType,
+		"weight":   ListifyFilter_ValidInt64,
 	}
 
 	failedFilters := []string{}
@@ -533,11 +533,11 @@ func Widget_ValidStatus(f *v1.Filter) error {
 	}
 
 	switch f.GetValue() {
-	case "WIDGET_STATUS_UNSPECIFIED":
-		return nil
 	case "WIDGET_STATUS_REQUESTED":
 		return nil
 	case "WIDGET_STATUS_CREATED":
+		return nil
+	case "WIDGET_STATUS_UNSPECIFIED":
 		return nil
 	}
 
@@ -547,14 +547,14 @@ func Widget_ValidStatus(f *v1.Filter) error {
 func (r *Widget) ValidateFilters(filters []*v1.Filter) error {
 	validFilters := map[string]func(*v1.Filter) error{
 		"status":      Widget_ValidStatus,
-		"created":     ListifyFilter_ValidTimestamp,
+		"customer_id": ListifyFilter_ValidUUID,
 		"weight":      ListifyFilter_ValidInt64,
+		"special":     ListifyFilter_ValidBool,
 		"width":       ListifyFilter_ValidInt64,
 		"height":      ListifyFilter_ValidInt64,
 		"diameter":    ListifyFilter_ValidInt64,
 		"type":        WidgetDetails_ValidType,
-		"customer_id": ListifyFilter_ValidUUID,
-		"special":     ListifyFilter_ValidBool,
+		"created":     ListifyFilter_ValidTimestamp,
 	}
 
 	failedFilters := []string{}
@@ -580,15 +580,15 @@ func (r *Widget) ValidateFilters(filters []*v1.Filter) error {
 
 func (r *ListWidgetsRequest) ValidateFilters() error {
 	validFilters := map[string]func(*v1.Filter) error{
-		"diameter":    ListifyFilter_ValidInt64,
-		"weight":      ListifyFilter_ValidInt64,
+		"created":     ListifyFilter_ValidTimestamp,
+		"customer_id": ListifyFilter_ValidUUID,
+		"special":     ListifyFilter_ValidBool,
 		"width":       ListifyFilter_ValidInt64,
 		"status":      Widget_ValidStatus,
-		"created":     ListifyFilter_ValidTimestamp,
-		"type":        WidgetDetails_ValidType,
-		"special":     ListifyFilter_ValidBool,
+		"weight":      ListifyFilter_ValidInt64,
 		"height":      ListifyFilter_ValidInt64,
-		"customer_id": ListifyFilter_ValidUUID,
+		"diameter":    ListifyFilter_ValidInt64,
+		"type":        WidgetDetails_ValidType,
 	}
 
 	failedFilters := []string{}
@@ -648,6 +648,7 @@ func (r *ListWidgetsRequest) FilterStatements() ([]string, []interface{}) {
 
 	return stmts, args
 }
+
 func (r *ListWidgetsRequest) FilterStatementsWithPlaceholders() ([]string, []interface{}) {
 	var statements []string
 	var args []interface{}
