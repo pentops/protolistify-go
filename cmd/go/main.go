@@ -14,10 +14,12 @@ import (
 const (
 	version = "1.0"
 
+	bytesPackage   = protogen.GoImportPath("bytes")
 	errorPackage   = protogen.GoImportPath("errors")
 	fmtPackage     = protogen.GoImportPath("fmt")
 	regexpPackage  = protogen.GoImportPath("regexp")
 	strconvPackage = protogen.GoImportPath("strconv")
+	stringsPackage = protogen.GoImportPath("strings")
 	timePackage    = protogen.GoImportPath("time")
 
 	listifyPackage = protogen.GoImportPath("github.com/pentops/protoc-gen-listify/listify/v1")
