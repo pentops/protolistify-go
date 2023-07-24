@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package listify.v1;
 
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
@@ -33,6 +34,15 @@ message Filter {
     string value = 2;
     Range  range = 3;
   }
+}
+
+message FilterSql {
+  repeated FilterClause clauses = 1;
+}
+
+message FilterClause {
+  string                    predicate = 1;
+  google.protobuf.ListValue arguments = 2;
 }
 
 message Range {
