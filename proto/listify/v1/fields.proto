@@ -36,13 +36,31 @@ message Filter {
   }
 }
 
-message FilterSql {
+message FilterClauses {
   repeated FilterClause clauses = 1;
 }
 
 message FilterClause {
-  string                    predicate = 1;
-  google.protobuf.ListValue arguments = 2;
+  string                  predicate = 1;
+  repeated FilterArgument arguments = 2;
+}
+
+message FilterArgument {
+  oneof kind {
+    double   double    =  1;
+    fixed32  fixed32   =  2;
+    fixed64  fixed64   =  3;
+    float    float     =  4;
+    int32    int32     =  5;
+    int64    int64     =  6;
+    sfixed32 sfixed32  =  7;
+    sfixed64 sfixed64  =  8;
+    sint32   sint32    =  9;
+    sint64   sint64    = 10;
+    uint32   uint32    = 11;
+    uint64   uint64    = 12;
+    string   string    = 13;
+  }
 }
 
 message Range {

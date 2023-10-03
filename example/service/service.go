@@ -90,7 +90,7 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 		return nil, err
 	}
 
-	stmts, args := req.FilterStatements()
+	filters := req.GetFilterClauses()
 
 	if req.Page != "" {
 		decoded, err := base64.StdEncoding.DecodeString(req.Page)
@@ -99,8 +99,16 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 			return nil, status.Error(codes.InvalidArgument, "invalid page token")
 		}
 
-		stmts = append(stmts, fmt.Sprintf("created >= $%d", len(args)+1))
-		args = append(args, decoded)
+		c := &listify.FilterClause{
+			Predicate: "created >= ?",
+			Arguments: []*listify.FilterArgument{
+				{
+					Kind: nil,
+				},
+			},
+		}
+
+		filters.Clauses = append(filters.Clauses, c)
 	}
 
 	q := `
