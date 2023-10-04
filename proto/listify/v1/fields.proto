@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package listify.v1;
 
-import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
