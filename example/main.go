@@ -116,7 +116,11 @@ func initData(ctx context.Context, db *sql.DB) error {
 
 func grpcServer(ctx context.Context, db *sql.DB) func() error {
 	return func() error {
-		serv := service.NewService(db)
+		//serv := service.NewService(db)
+		serv, err := service.NewServiceSqrl(db)
+		if err != nil {
+			return fmt.Errorf("failed to create service: %w", err)
+		}
 
 		grpcServer := grpc.NewServer(
 			grpc.UnaryInterceptor(
