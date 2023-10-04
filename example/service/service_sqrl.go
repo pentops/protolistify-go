@@ -30,7 +30,7 @@ type ServiceSqrl struct {
 func NewServiceSqrl(conn sqrlx.Connection) (*ServiceSqrl, error) {
 	db, err := sqrlx.New(conn, sq.Dollar)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &ServiceSqrl{
