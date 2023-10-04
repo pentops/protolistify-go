@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/base64"
-	"fmt"
 	"log"
 	"time"
 
@@ -95,7 +94,7 @@ func (s *ServiceSqrl) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequ
 		return nil, err
 	}
 
-	stmts, args := req.FilterStatements()
+	filters := req.GetFilterClauses()
 
 	if req.Page != "" {
 		decoded, err := base64.StdEncoding.DecodeString(req.Page)
@@ -104,8 +103,18 @@ func (s *ServiceSqrl) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequ
 			return nil, status.Error(codes.InvalidArgument, "invalid page token")
 		}
 
-		stmts = append(stmts, fmt.Sprintf("created >= $%d", len(args)+1))
-		args = append(args, decoded)
+		c := &listify.FilterClause{
+			Predicate: "created >= ?",
+			Arguments: []*listify.FilterArgument{
+				{
+					Kind: &listify.FilterArgument_String_{
+						String_: string(decoded),
+					},
+				},
+			},
+		}
+
+		filters.Clauses = append(filters.Clauses, c)
 	}
 
 	limit := int64(s.defaultPageSize)
@@ -118,6 +127,8 @@ func (s *ServiceSqrl) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequ
 		From("widgets").
 		OrderBy("created DESC").
 		Limit(uint64(limit))
+
+	stmts, args := filters.ToSqrl()
 
 	for i := range stmts {
 		q.Where(stmts[i], args[i])
