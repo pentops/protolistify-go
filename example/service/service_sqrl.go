@@ -125,7 +125,7 @@ func (s *ServiceSqrl) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequ
 	q := sq.
 		Select("id", "customer_id", "details", "status", "created").
 		From("widgets").
-		OrderBy("created DESC").
+		OrderBy("created").
 		Limit(uint64(limit))
 
 	stmts, args := filters.ToSqrl()

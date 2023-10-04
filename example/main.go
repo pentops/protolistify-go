@@ -75,7 +75,7 @@ func initData(ctx context.Context, db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Commit()
+	defer tx.Commit() //nolint:errcheck
 
 	_, err = tx.ExecContext(ctx, `
 		DROP TABLE IF EXISTS widgets;
@@ -172,7 +172,7 @@ func jsonServer(ctx context.Context) func() error {
 		go func() {
 			<-ctx.Done()
 			log.Println("shutting down json service")
-			srv.Shutdown(ctx)
+			srv.Shutdown(ctx) //nolint:errcheck
 		}()
 
 		log.Printf("starting json service on port %d", config.JsonPort)

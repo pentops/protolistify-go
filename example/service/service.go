@@ -46,7 +46,7 @@ func (s *Service) GetWidget(ctx context.Context, req *sspb.GetWidgetRequest) (*s
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Commit()
+	defer tx.Commit() //nolint:errcheck
 
 	q := `
 	SELECT
