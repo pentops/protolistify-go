@@ -103,7 +103,9 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 			Predicate: "created >= ?",
 			Arguments: []*listify.FilterArgument{
 				{
-					Kind: nil,
+					Kind: &listify.FilterArgument_String_{
+						String_: string(decoded),
+					},
 				},
 			},
 		}
