@@ -91,26 +91,35 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 	}
 
 	filters := req.GetFilterClauses()
+	limit := int64(s.defaultPageSize)
 
-	if req.Page != "" {
-		decoded, err := base64.StdEncoding.DecodeString(req.Page)
-		if err != nil {
-			log.Printf("failed to decode page token: %s", err)
-			return nil, status.Error(codes.InvalidArgument, "invalid page token")
-		}
+	if req.Page != nil {
+		page := req.Page
 
-		c := &listify.FilterClause{
-			Predicate: "created >= ?",
-			Arguments: []*listify.FilterArgument{
-				{
-					Kind: &listify.FilterArgument_String_{
-						String_: string(decoded),
+		if page.Offset != "" {
+			decoded, err := base64.StdEncoding.DecodeString(page.Offset)
+			if err != nil {
+				log.Printf("failed to decode page token: %s", err)
+				return nil, status.Error(codes.InvalidArgument, "invalid page token")
+			}
+
+			c := &listify.FilterClause{
+				Predicate: "created >= ?",
+				Arguments: []*listify.FilterArgument{
+					{
+						Kind: &listify.FilterArgument_String_{
+							String_: string(decoded),
+						},
 					},
 				},
-			},
+			}
+
+			filters.Clauses = append(filters.Clauses, c)
 		}
 
-		filters.Clauses = append(filters.Clauses, c)
+		if page.Limit > 0 && page.Limit <= int64(s.maxPageSize) {
+			limit = page.Limit
+		}
 	}
 
 	q := `
@@ -130,11 +139,6 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 
 	q += "\n ORDER BY created"
 
-	limit := int64(s.defaultPageSize)
-	if req.Limit > 0 && req.Limit <= int64(s.maxPageSize) {
-		limit = req.Limit
-	}
-
 	q += fmt.Sprintf("\n LIMIT %d", limit+1)
 
 	widgets, err := s.getWidgets(ctx, tx, q, args)
@@ -142,8 +146,8 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 		return nil, err
 	}
 
-	page := &listify.Page{
-		NextPage:         "",
+	page := &listify.PageResponse{
+		NextOffset:       "",
 		FinalPage:        true,
 		TotalPageRecords: int64(len(widgets)),
 		TotalRecords:     total,
@@ -153,7 +157,7 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 		last := widgets[len(widgets)-1]
 		widgets = widgets[:len(widgets)-1]
 
-		page.NextPage = base64.StdEncoding.EncodeToString([]byte(last.Created.AsTime().Format(time.RFC3339Nano)))
+		page.NextOffset = base64.StdEncoding.EncodeToString([]byte(last.Created.AsTime().Format(time.RFC3339Nano)))
 		page.FinalPage = false
 	}
 

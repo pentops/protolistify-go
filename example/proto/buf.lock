@@ -14,5 +14,5 @@ deps:
   - remote: buf.build
     owner: pentops
     repository: protoc-gen-listify
-    commit: b2f80f29b2ba4ec8a3849080bdd4b5a5
-    digest: shake256:f31a37121ad76c95b430dcdb14ec4882a7d686b6d3541e8c604709df4b5ed9b0b117347c5c95548b3d4d61553c0cf11585fb37e4803396b8790d1b2598146aa6
+    commit: 473147c71105437a96c01b97398195ec
+    digest: shake256:2bedc853acc9664fff092a000503a73ecf90d40496c8dfc2c860a135bb1c9794164534379fc2d5c0dbb1fcce9aa31b4ea9b68ceb1c8a281fa198db98ebd985e1
