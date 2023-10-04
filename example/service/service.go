@@ -83,7 +83,7 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Commit()
+	defer tx.Commit() //nolint:errcheck
 
 	total, err := s.totalWidgets(ctx, tx)
 	if err != nil {
