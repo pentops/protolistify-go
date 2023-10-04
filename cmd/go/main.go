@@ -25,7 +25,6 @@ const (
 
 func main() {
 	showVersion := flag.Bool("version", false, "Print the version information and exit")
-	lib := flag.Bool("lib", false, "Generate the listify library")
 
 	flag.Parse()
 
@@ -39,15 +38,6 @@ func main() {
 
 		for _, f := range gen.Files {
 			if !f.Generate {
-				continue
-			}
-
-			if *lib {
-				_, err := genLibFile(gen, f)
-				if err != nil {
-					return err
-				}
-
 				continue
 			}
 
