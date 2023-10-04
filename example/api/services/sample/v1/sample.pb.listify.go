@@ -3,13 +3,11 @@
 package sspb
 
 import (
-	bytes "bytes"
 	errors "errors"
 	fmt "fmt"
 	v1 "github.com/pentops/protoc-gen-listify/listify/v1"
 	regexp "regexp"
 	strconv "strconv"
-	strings "strings"
 	time "time"
 )
 
@@ -487,9 +485,9 @@ func WidgetDetails_ValidType(f *v1.Filter) error {
 	}
 
 	switch f.GetValue() {
-	case "SquareWidget":
-		return nil
 	case "RoundWidget":
+		return nil
+	case "SquareWidget":
 		return nil
 	}
 
@@ -498,12 +496,12 @@ func WidgetDetails_ValidType(f *v1.Filter) error {
 
 func (r *WidgetDetails) ValidateFilters(filters []*v1.Filter) error {
 	validFilters := map[string]func(*v1.Filter) error{
+		"weight":   ListifyFilter_ValidInt64,
 		"special":  ListifyFilter_ValidBool,
 		"width":    ListifyFilter_ValidInt64,
 		"height":   ListifyFilter_ValidInt64,
 		"diameter": ListifyFilter_ValidInt64,
 		"type":     WidgetDetails_ValidType,
-		"weight":   ListifyFilter_ValidInt64,
 	}
 
 	failedFilters := []string{}
@@ -533,11 +531,11 @@ func Widget_ValidStatus(f *v1.Filter) error {
 	}
 
 	switch f.GetValue() {
+	case "WIDGET_STATUS_UNSPECIFIED":
+		return nil
 	case "WIDGET_STATUS_REQUESTED":
 		return nil
 	case "WIDGET_STATUS_CREATED":
-		return nil
-	case "WIDGET_STATUS_UNSPECIFIED":
 		return nil
 	}
 
@@ -546,14 +544,14 @@ func Widget_ValidStatus(f *v1.Filter) error {
 
 func (r *Widget) ValidateFilters(filters []*v1.Filter) error {
 	validFilters := map[string]func(*v1.Filter) error{
-		"status":      Widget_ValidStatus,
-		"customer_id": ListifyFilter_ValidUUID,
+		"type":        WidgetDetails_ValidType,
 		"weight":      ListifyFilter_ValidInt64,
 		"special":     ListifyFilter_ValidBool,
+		"customer_id": ListifyFilter_ValidUUID,
 		"width":       ListifyFilter_ValidInt64,
 		"height":      ListifyFilter_ValidInt64,
 		"diameter":    ListifyFilter_ValidInt64,
-		"type":        WidgetDetails_ValidType,
+		"status":      Widget_ValidStatus,
 		"created":     ListifyFilter_ValidTimestamp,
 	}
 
@@ -581,14 +579,14 @@ func (r *Widget) ValidateFilters(filters []*v1.Filter) error {
 func (r *ListWidgetsRequest) ValidateFilters() error {
 	validFilters := map[string]func(*v1.Filter) error{
 		"created":     ListifyFilter_ValidTimestamp,
-		"customer_id": ListifyFilter_ValidUUID,
-		"special":     ListifyFilter_ValidBool,
-		"width":       ListifyFilter_ValidInt64,
-		"status":      Widget_ValidStatus,
-		"weight":      ListifyFilter_ValidInt64,
-		"height":      ListifyFilter_ValidInt64,
 		"diameter":    ListifyFilter_ValidInt64,
 		"type":        WidgetDetails_ValidType,
+		"special":     ListifyFilter_ValidBool,
+		"customer_id": ListifyFilter_ValidUUID,
+		"status":      Widget_ValidStatus,
+		"height":      ListifyFilter_ValidInt64,
+		"weight":      ListifyFilter_ValidInt64,
+		"width":       ListifyFilter_ValidInt64,
 	}
 
 	failedFilters := []string{}
@@ -612,252 +610,247 @@ func (r *ListWidgetsRequest) ValidateFilters() error {
 	return nil
 }
 
-func (r *ListWidgetsRequest) FilterStatements() ([]string, []interface{}) {
-	stmts, args := r.FilterStatementsWithPlaceholders()
-
-	ordinal := 1
-	for i, stmt := range stmts {
-		if strings.Index(stmt, "?") == -1 {
-			continue
-		}
-
-		buf := &bytes.Buffer{}
-		for {
-			p := strings.Index(stmt, "?")
-			if p == -1 {
-				break
-			}
-
-			if len(stmt[p:]) > 1 && stmt[p:p+2] == "??" { // escape ?? => ?
-				buf.WriteString(stmt[:p])
-				buf.WriteString("?")
-				if len(stmt[p:]) == 1 {
-					break
-				}
-				stmt = stmt[p+2:]
-			} else {
-				buf.WriteString(stmt[:p])
-				buf.WriteString(fmt.Sprintf("$%d", ordinal))
-				stmt = stmt[p+1:]
-				ordinal++
-			}
-		}
-
-		stmts[i] = buf.String()
-	}
-
-	return stmts, args
-}
-
-func (r *ListWidgetsRequest) FilterStatementsWithPlaceholders() ([]string, []interface{}) {
-	var statements []string
-	var args []interface{}
+func (r *ListWidgetsRequest) GetFilterClauses() *v1.FilterClauses {
+	resp := &v1.FilterClauses{}
 
 	for _, filter := range r.Filters {
+		clause := &v1.FilterClause{}
+
 		if filter.GetRange() != nil {
-			switch r := filter.GetRange().GetType().(type) {
+			switch k := filter.GetRange().GetType().(type) {
 			case *v1.Range_Double:
-				if r.Double.Min != nil && r.Double.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Double.Min.Value, r.Double.Max.Value)
+				if k.Double.Min != nil && k.Double.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Double{Double: k.Double.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Double{Double: k.Double.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Double.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Double.Min.Value)
+					if k.Double.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Double{Double: k.Double.Min.Value}})
 					}
-					if r.Double.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Double.Max.Value)
+					if k.Double.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Double{Double: k.Double.Max.Value}})
 					}
 				}
 			case *v1.Range_Fixed32:
-				if r.Fixed32.Min != nil && r.Fixed32.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Fixed32.Min.Value, r.Fixed32.Max.Value)
+				if k.Fixed32.Min != nil && k.Fixed32.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Fixed32{Fixed32: k.Fixed32.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Fixed32{Fixed32: k.Fixed32.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Fixed32.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Fixed32.Min.Value)
+					if k.Fixed32.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Fixed32{Fixed32: k.Fixed32.Min.Value}})
 					}
-					if r.Fixed32.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Fixed32.Max.Value)
+					if k.Fixed32.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Fixed32{Fixed32: k.Fixed32.Max.Value}})
 					}
 				}
 			case *v1.Range_Fixed64:
-				if r.Fixed64.Min != nil && r.Fixed64.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Fixed64.Min.Value, r.Fixed64.Max.Value)
+				if k.Fixed64.Min != nil && k.Fixed64.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Fixed64{Fixed64: k.Fixed64.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Fixed64{Fixed64: k.Fixed64.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Fixed64.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Fixed64.Min.Value)
+					if k.Fixed64.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Fixed64{Fixed64: k.Fixed64.Min.Value}})
 					}
-					if r.Fixed64.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Fixed64.Max.Value)
+					if k.Fixed64.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Fixed64{Fixed64: k.Fixed64.Max.Value}})
 					}
 				}
 			case *v1.Range_Float:
-				if r.Float.Min != nil && r.Float.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Float.Min.Value, r.Float.Max.Value)
+				if k.Float.Min != nil && k.Float.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Float{Float: k.Float.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Float{Float: k.Float.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Float.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Float.Min.Value)
+					if k.Float.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Float{Float: k.Float.Min.Value}})
 					}
-					if r.Float.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Float.Max.Value)
+					if k.Float.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Float{Float: k.Float.Max.Value}})
 					}
 				}
 			case *v1.Range_Int32:
-				if r.Int32.Min != nil && r.Int32.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Int32.Min.Value, r.Int32.Max.Value)
+				if k.Int32.Min != nil && k.Int32.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Int32{Int32: k.Int32.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Int32{Int32: k.Int32.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Int32.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Int32.Min.Value)
+					if k.Int32.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Int32{Int32: k.Int32.Min.Value}})
 					}
-					if r.Int32.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Int32.Max.Value)
+					if k.Int32.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Int32{Int32: k.Int32.Max.Value}})
 					}
 				}
 			case *v1.Range_Int64:
-				if r.Int64.Min != nil && r.Int64.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Int64.Min.Value, r.Int64.Max.Value)
+				if k.Int64.Min != nil && k.Int64.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Int64{Int64: k.Int64.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Int64{Int64: k.Int64.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Int64.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Int64.Min.Value)
+					if k.Int64.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Int64{Int64: k.Int64.Min.Value}})
 					}
-					if r.Int64.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Int64.Max.Value)
+					if k.Int64.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Int64{Int64: k.Int64.Max.Value}})
 					}
 				}
 			case *v1.Range_Sfixed32:
-				if r.Sfixed32.Min != nil && r.Sfixed32.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Sfixed32.Min.Value, r.Sfixed32.Max.Value)
+				if k.Sfixed32.Min != nil && k.Sfixed32.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Sfixed32{Sfixed32: k.Sfixed32.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Sfixed32{Sfixed32: k.Sfixed32.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Sfixed32.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Sfixed32.Min.Value)
+					if k.Sfixed32.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Sfixed32{Sfixed32: k.Sfixed32.Min.Value}})
 					}
-					if r.Sfixed32.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Sfixed32.Max.Value)
+					if k.Sfixed32.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Sfixed32{Sfixed32: k.Sfixed32.Max.Value}})
 					}
 				}
 			case *v1.Range_Sfixed64:
-				if r.Sfixed64.Min != nil && r.Sfixed64.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Sfixed64.Min.Value, r.Sfixed64.Max.Value)
+				if k.Sfixed64.Min != nil && k.Sfixed64.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Sfixed64{Sfixed64: k.Sfixed64.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Sfixed64{Sfixed64: k.Sfixed64.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Sfixed64.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Sfixed64.Min.Value)
+					if k.Sfixed64.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Sfixed64{Sfixed64: k.Sfixed64.Min.Value}})
 					}
-					if r.Sfixed64.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Sfixed64.Max.Value)
+					if k.Sfixed64.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Sfixed64{Sfixed64: k.Sfixed64.Max.Value}})
 					}
 				}
 			case *v1.Range_Sint32:
-				if r.Sint32.Min != nil && r.Sint32.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Sint32.Min.Value, r.Sint32.Max.Value)
+				if k.Sint32.Min != nil && k.Sint32.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Sint32{Sint32: k.Sint32.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Sint32{Sint32: k.Sint32.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Sint32.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Sint32.Min.Value)
+					if k.Sint32.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Sint32{Sint32: k.Sint32.Min.Value}})
 					}
-					if r.Sint32.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Sint32.Max.Value)
+					if k.Sint32.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Sint32{Sint32: k.Sint32.Max.Value}})
 					}
 				}
 			case *v1.Range_Sint64:
-				if r.Sint64.Min != nil && r.Sint64.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Sint64.Min.Value, r.Sint64.Max.Value)
+				if k.Sint64.Min != nil && k.Sint64.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Sint64{Sint64: k.Sint64.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Sint64{Sint64: k.Sint64.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Sint64.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Sint64.Min.Value)
+					if k.Sint64.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Sint64{Sint64: k.Sint64.Min.Value}})
 					}
-					if r.Sint64.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Sint64.Max.Value)
+					if k.Sint64.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Sint64{Sint64: k.Sint64.Max.Value}})
 					}
 				}
 			case *v1.Range_Uint32:
-				if r.Uint32.Min != nil && r.Uint32.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Uint32.Min.Value, r.Uint32.Max.Value)
+				if k.Uint32.Min != nil && k.Uint32.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Uint32{Uint32: k.Uint32.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Uint32{Uint32: k.Uint32.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Uint32.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Uint32.Min.Value)
+					if k.Uint32.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Uint32{Uint32: k.Uint32.Min.Value}})
 					}
-					if r.Uint32.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Uint32.Max.Value)
+					if k.Uint32.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Uint32{Uint32: k.Uint32.Max.Value}})
 					}
 				}
 			case *v1.Range_Uint64:
-				if r.Uint64.Min != nil && r.Uint64.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Uint64.Min.Value, r.Uint64.Max.Value)
+				if k.Uint64.Min != nil && k.Uint64.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_Uint64{Uint64: k.Uint64.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_Uint64{Uint64: k.Uint64.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Uint64.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Uint64.Min.Value)
+					if k.Uint64.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Uint64{Uint64: k.Uint64.Min.Value}})
 					}
-					if r.Uint64.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Uint64.Max.Value)
+					if k.Uint64.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_Uint64{Uint64: k.Uint64.Max.Value}})
 					}
 				}
 			case *v1.Range_Date:
-				if r.Date.Min != nil && r.Date.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Date.Min.Value, r.Date.Max.Value)
+				if k.Date.Min != nil && k.Date.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_String_{String_: k.Date.Min.Value}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_String_{String_: k.Date.Max.Value}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Date.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Date.Min.Value)
+					if k.Date.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_String_{String_: k.Date.Min.Value}})
 					}
-					if r.Date.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Date.Max.Value)
+					if k.Date.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_String_{String_: k.Date.Max.Value}})
 					}
 				}
 			case *v1.Range_Timestamp:
-				if r.Timestamp.Min != nil && r.Timestamp.Max != nil {
-					statements = append(statements, fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field))
-					args = append(args, r.Timestamp.Min.AsTime(), r.Timestamp.Max.AsTime())
+				if k.Timestamp.Min != nil && k.Timestamp.Max != nil {
+					clause.Predicate = fmt.Sprintf(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)
+					arg1 := &v1.FilterArgument{Kind: &v1.FilterArgument_String_{String_: k.Timestamp.Min.AsTime().Format(time.RFC3339Nano)}}
+					arg2 := &v1.FilterArgument{Kind: &v1.FilterArgument_String_{String_: k.Timestamp.Max.AsTime().Format(time.RFC3339Nano)}}
+					clause.Arguments = append(clause.Arguments, arg1, arg2)
 				} else {
-					if r.Timestamp.Min != nil {
-						statements = append(statements, fmt.Sprintf(`%s >= ?`, filter.Field))
-						args = append(args, r.Timestamp.Min.AsTime())
+					if k.Timestamp.Min != nil {
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Predicate = fmt.Sprintf(`%s >= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_String_{String_: k.Timestamp.Min.AsTime().Format(time.RFC3339Nano)}})
 					}
-					if r.Timestamp.Max != nil {
-						statements = append(statements, fmt.Sprintf(`%s <= ?`, filter.Field))
-						args = append(args, r.Timestamp.Max.AsTime())
+					if k.Timestamp.Max != nil {
+						clause.Predicate = fmt.Sprintf(`%s <= ?`, filter.Field)
+						clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_String_{String_: k.Timestamp.Max.AsTime().Format(time.RFC3339Nano)}})
 					}
 				}
 			}
 		} else {
-			statements = append(statements, fmt.Sprintf("%s = ?", filter.Field))
-			args = append(args, filter.GetValue())
+			clause.Predicate = fmt.Sprintf("%s = ?", filter.Field)
+			clause.Arguments = append(clause.Arguments, &v1.FilterArgument{Kind: &v1.FilterArgument_String_{String_: filter.GetValue()}})
 		}
+
+		resp.Clauses = append(resp.Clauses, clause)
 	}
 
-	return statements, args
+	return resp
 }

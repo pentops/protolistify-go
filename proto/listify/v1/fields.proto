@@ -8,8 +8,13 @@ import "validate/validate.proto";
 
 option go_package = "github.com/pentops/protoc-gen-listify/listify/v1;listify";
 
-message Page {
-  string next_page          = 1;
+message PageRequest {
+  string offset = 30;
+  int64  limit  = 31;
+}
+
+message PageResponse {
+  string next_offset        = 1;
   bool   final_page         = 2;
   int64  total_page_records = 3;
   int64  total_records      = 4;
@@ -32,6 +37,33 @@ message Filter {
 
     string value = 2;
     Range  range = 3;
+  }
+}
+
+message FilterClauses {
+  repeated FilterClause clauses = 1;
+}
+
+message FilterClause {
+  string                  predicate = 1;
+  repeated FilterArgument arguments = 2;
+}
+
+message FilterArgument {
+  oneof kind {
+    double   double    =  1;
+    fixed32  fixed32   =  2;
+    fixed64  fixed64   =  3;
+    float    float     =  4;
+    int32    int32     =  5;
+    int64    int64     =  6;
+    sfixed32 sfixed32  =  7;
+    sfixed64 sfixed64  =  8;
+    sint32   sint32    =  9;
+    sint64   sint64    = 10;
+    uint32   uint32    = 11;
+    uint64   uint64    = 12;
+    string   string    = 13;
   }
 }
 
