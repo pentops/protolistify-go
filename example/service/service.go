@@ -122,6 +122,8 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 		created
 	FROM widgets`
 
+	stmts, args := filters.ToSql()
+
 	if len(args) > 0 {
 		q += "\n WHERE " + strings.Join(stmts, " AND ")
 	}
