@@ -12,7 +12,7 @@ func (x *FilterClauses) ToSql() ([]string, []interface{}) {
 
 	ordinal := 1
 	for i, stmt := range stmts {
-		if strings.Index(stmt, "?") == -1 {
+		if !strings.Contains(stmt, "?") {
 			continue
 		}
 
