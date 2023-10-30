@@ -9,12 +9,12 @@ import "validate/validate.proto";
 option go_package = "github.com/pentops/protoc-gen-listify/listify/v1;listify";
 
 message PageRequest {
-  string offset = 30;
-  int64  limit  = 31;
+  string token = 30;
+  int64  limit = 31;
 }
 
 message PageResponse {
-  string next_offset        = 1;
+  string next_token         = 1;
   bool   final_page         = 2;
   int64  total_page_records = 3;
   int64  total_records      = 4;
