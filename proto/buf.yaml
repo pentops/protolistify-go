@@ -1,7 +1,7 @@
 version: v1
 name: buf.build/pentops/protoc-gen-listify
 deps:
-  - buf.build/envoyproxy/protoc-gen-validate
+  - buf.build/bufbuild/protovalidate
 
 breaking:
   use:
