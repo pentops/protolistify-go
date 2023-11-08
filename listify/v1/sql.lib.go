@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func (x *FilterClauses) ToSql() ([]string, []interface{}) {
+func (x *SqlClauses) ToSql() ([]string, []interface{}) {
 	stmts, args := x.FilterStatementsWithPlaceholders()
 
 	ordinal := 1
@@ -44,11 +44,11 @@ func (x *FilterClauses) ToSql() ([]string, []interface{}) {
 	return stmts, args
 }
 
-func (x *FilterClauses) ToSqrl() ([]string, []interface{}) {
+func (x *SqlClauses) ToSqrl() ([]string, []interface{}) {
 	return x.FilterStatementsWithPlaceholders()
 }
 
-func (x *FilterClauses) FilterStatementsWithPlaceholders() ([]string, []interface{}) {
+func (x *SqlClauses) FilterStatementsWithPlaceholders() ([]string, []interface{}) {
 	stmts := []string{}
 	args := []interface{}{}
 
@@ -61,36 +61,36 @@ func (x *FilterClauses) FilterStatementsWithPlaceholders() ([]string, []interfac
 	return stmts, args
 }
 
-func (x *FilterClause) ToSql() (string, []interface{}) {
+func (x *SqlClause) ToSql() (string, []interface{}) {
 	args := []interface{}{}
 
 	for _, arg := range x.Arguments {
 		switch k := arg.GetKind().(type) {
-		case *FilterArgument_Double:
+		case *SqlArgument_Double:
 			args = append(args, k.Double)
-		case *FilterArgument_Fixed32:
+		case *SqlArgument_Fixed32:
 			args = append(args, k.Fixed32)
-		case *FilterArgument_Fixed64:
+		case *SqlArgument_Fixed64:
 			args = append(args, k.Fixed64)
-		case *FilterArgument_Float:
+		case *SqlArgument_Float:
 			args = append(args, k.Float)
-		case *FilterArgument_Int32:
+		case *SqlArgument_Int32:
 			args = append(args, k.Int32)
-		case *FilterArgument_Int64:
+		case *SqlArgument_Int64:
 			args = append(args, k.Int64)
-		case *FilterArgument_Sfixed32:
+		case *SqlArgument_Sfixed32:
 			args = append(args, k.Sfixed32)
-		case *FilterArgument_Sfixed64:
+		case *SqlArgument_Sfixed64:
 			args = append(args, k.Sfixed64)
-		case *FilterArgument_Sint32:
+		case *SqlArgument_Sint32:
 			args = append(args, k.Sint32)
-		case *FilterArgument_Sint64:
+		case *SqlArgument_Sint64:
 			args = append(args, k.Sint64)
-		case *FilterArgument_Uint32:
+		case *SqlArgument_Uint32:
 			args = append(args, k.Uint32)
-		case *FilterArgument_Uint64:
+		case *SqlArgument_Uint64:
 			args = append(args, k.Uint64)
-		case *FilterArgument_String_:
+		case *SqlArgument_String_:
 			args = append(args, k.String_)
 		}
 	}
