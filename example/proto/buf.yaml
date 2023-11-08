@@ -1,7 +1,7 @@
 version: v1
 
 deps:
-  - buf.build/envoyproxy/protoc-gen-validate
+  - buf.build/bufbuild/protovalidate
   - buf.build/googleapis/googleapis
   - buf.build/pentops/protoc-gen-listify
 

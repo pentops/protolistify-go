@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package listify.services.sample.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "listify/v1/annotations.proto";
 import "listify/v1/fields.proto";
-import "validate/validate.proto";
 
 option go_package = "github.com/pentops/protoc-gen-listify/example/api/services/sample/v1;sspb";
 
@@ -31,37 +31,37 @@ service SampleService {
 
 message GetWidgetRequest {
   string id = 1 [
-    (validate.rules).string.uuid = true
+    (buf.validate.field).string.uuid = true
   ];
 }
 
 message GetWidgetResponse {
   Widget widget = 1 [
-    (validate.rules).message.required = true
+    (buf.validate.field).required = true
   ];
 }
 
 message Widget {
   string id = 1 [
-    (validate.rules).string.uuid = true
+    (buf.validate.field).string.uuid = true
   ];
 
   string customer_id = 2 [
-    (validate.rules).string.uuid = true,
+    (buf.validate.field).string.uuid = true,
     (listify.v1.rules).string.foreign_key.uuid.filterable = true
   ];
 
   WidgetDetails details = 3 [
-    (validate.rules).message.required = true
+    (buf.validate.field).required = true
   ];
 
   WidgetStatus status = 4 [
-    (validate.rules).enum = { defined_only: true not_in: [0] },
+    (buf.validate.field).enum = { defined_only: true not_in: [0] },
     (listify.v1.rules).enum.filterable = true
   ];
 
   google.protobuf.Timestamp created = 5 [
-    (validate.rules).timestamp.required = true,
+    (buf.validate.field).required = true,
     (listify.v1.rules).timestamp = {filterable: true, sortable: true}
   ];
 }
@@ -74,12 +74,12 @@ enum WidgetStatus {
 
 message WidgetDetails {
   string name = 1 [
-    (validate.rules).string.min_len = 1,
+    (buf.validate.field).string.min_len = 1,
     (listify.v1.rules).string.open_text.searchable = true
   ];
 
   int64 weight = 2 [
-    (validate.rules).int64.gt = 0,
+    (buf.validate.field).int64.gt = 0,
     (listify.v1.rules).int64 = {filterable: true, sortable: true}
   ];
 
@@ -88,7 +88,7 @@ message WidgetDetails {
   ];
 
   oneof type {
-    option (validate.required) = true;
+    option (buf.validate.field).required = true;
     option (listify.v1.oneof_rules).filterable = true;
 
     SquareWidget square = 4;
@@ -98,19 +98,19 @@ message WidgetDetails {
 
 message SquareWidget {
   int64 width = 1 [
-    (validate.rules).int64.gt = 0,
+    (buf.validate.field).int64.gt = 0,
     (listify.v1.rules).int64 = {filterable: true, sortable: true}
   ];
 
   int64 height = 2 [
-    (validate.rules).int64.gt = 0,
+    (buf.validate.field).int64.gt = 0,
     (listify.v1.rules).int64 = {filterable: true, sortable: true}
   ];
 }
 
 message RoundWidget {
   int64 diameter = 1 [
-    (validate.rules).int64.gt = 0,
+    (buf.validate.field).int64.gt = 0,
     (listify.v1.rules).int64 = {filterable: true, sortable: true}
   ];
 }
