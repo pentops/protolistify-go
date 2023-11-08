@@ -88,7 +88,7 @@ message WidgetDetails {
   ];
 
   oneof type {
-    option (buf.validate.field).required = true;
+    option (buf.validate.oneof).required = true;
     option (listify.v1.oneof_rules).filterable = true;
 
     SquareWidget square = 4;
