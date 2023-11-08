@@ -3,8 +3,8 @@ module github.com/pentops/protoc-gen-listify
 go 1.20
 
 require (
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.31.0-20231106192134-1baebb0a1518.2
 	github.com/elgris/sqrl v0.0.0-20190909141434-5a439265eeec
-	github.com/envoyproxy/protoc-gen-validate v1.0.2
 	github.com/gomicro/blockit v0.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0
