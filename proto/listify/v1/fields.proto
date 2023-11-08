@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package listify.v1;
 
+import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
-import "buf/validate/validate.proto";
 
 option go_package = "github.com/pentops/protoc-gen-listify/listify/v1;listify";
 
