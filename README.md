@@ -1,3 +1,3 @@
-# protoc-gen-listify
+# protolistify-go
 
-Proto definitions and generation for simplifying pagination, sorting, and listing functions
+Protocol Buffer Listifying for Go
