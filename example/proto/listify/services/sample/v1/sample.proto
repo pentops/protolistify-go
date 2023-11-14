@@ -25,6 +25,7 @@ service SampleService {
 
     option (listify.v1.api) = {
       enable: true
+      rank_field: "seq"
     };
   }
 }
@@ -48,7 +49,7 @@ message Widget {
 
   string customer_id = 2 [
     (buf.validate.field).string.uuid = true,
-    (listify.v1.rules).string.foreign_key.uuid.filterable = true
+    (listify.v1.rules).string.foreign_key.uuid.filtering.filterable = true
   ];
 
   WidgetDetails details = 3 [
@@ -57,12 +58,15 @@ message Widget {
 
   WidgetStatus status = 4 [
     (buf.validate.field).enum = { defined_only: true not_in: [0] },
-    (listify.v1.rules).enum.filterable = true
+    (listify.v1.rules).enum.filtering.filterable = true
   ];
 
   google.protobuf.Timestamp created = 5 [
     (buf.validate.field).required = true,
-    (listify.v1.rules).timestamp = {filterable: true, sortable: true}
+    (listify.v1.rules).timestamp = {
+      filtering: { filterable: true }
+      sorting: { sortable: true default_sort: true }
+    }
   ];
 }
 
@@ -75,21 +79,24 @@ enum WidgetStatus {
 message WidgetDetails {
   string name = 1 [
     (buf.validate.field).string.min_len = 1,
-    (listify.v1.rules).string.open_text.searchable = true
+    (listify.v1.rules).string.open_text.searching.searchable = true
   ];
 
   int64 weight = 2 [
     (buf.validate.field).int64.gt = 0,
-    (listify.v1.rules).int64 = {filterable: true, sortable: true}
+    (listify.v1.rules).int64 = {
+      filtering: { filterable: true }
+      sorting: { sortable: true }
+    }
   ];
 
   bool special = 3 [
-    (listify.v1.rules).bool.filterable = true
+    (listify.v1.rules).bool.filtering.filterable = true
   ];
 
   oneof type {
     option (buf.validate.oneof).required = true;
-    option (listify.v1.oneof_rules).filterable = true;
+    option (listify.v1.oneof_rules).filtering.filterable = true;
 
     SquareWidget square = 4;
     RoundWidget round = 5;
@@ -99,19 +106,28 @@ message WidgetDetails {
 message SquareWidget {
   int64 width = 1 [
     (buf.validate.field).int64.gt = 0,
-    (listify.v1.rules).int64 = {filterable: true, sortable: true}
+    (listify.v1.rules).int64 = {
+      filtering: { filterable: true }
+      sorting: { sortable: true }
+    }
   ];
 
   int64 height = 2 [
     (buf.validate.field).int64.gt = 0,
-    (listify.v1.rules).int64 = {filterable: true, sortable: true}
+    (listify.v1.rules).int64 = {
+      filtering: { filterable: true }
+      sorting: { sortable: true }
+    }
   ];
 }
 
 message RoundWidget {
   int64 diameter = 1 [
     (buf.validate.field).int64.gt = 0,
-    (listify.v1.rules).int64 = {filterable: true, sortable: true}
+    (listify.v1.rules).int64 = {
+      filtering: { filterable: true }
+      sorting: { sortable: true }
+    }
   ];
 }
 

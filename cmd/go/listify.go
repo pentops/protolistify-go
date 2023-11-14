@@ -48,6 +48,9 @@ func genListifyHeaderContent(gen *protogen.Plugin, file *protogen.File, g *proto
 	g.P("ErrFilterValidationInvalidRangeType = ", errorPackage.Ident("New"), `("invalid type for range")`)
 	g.P("ErrFilterValidationInvalidValue = ", errorPackage.Ident("New"), `("invalid value(s) for filter")`)
 	g.P()
+	g.P("ErrSortValidationInvalidField = ", errorPackage.Ident("New"), `("invalid value(s) for sort")`)
+	g.P("ErrSortValidationInvalidDirection = ", errorPackage.Ident("New"), `("conflicting direction values for sort")`)
+	g.P()
 	g.P(`uuidMatch = `, regexpPackage.Ident("MustCompile"), `("(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")`)
 	g.P(`dateMatch = `, regexpPackage.Ident("MustCompile"), `("^([0-9]{4}-?([0-9]{2})?-?([0-9]{2})?)$")`)
 	g.P(")")
@@ -73,6 +76,11 @@ func genListifyFileContent(gen *protogen.Plugin, file *protogen.File, g *protoge
 			}
 
 			err := genFilterableContent(gen, method, g)
+			if err != nil {
+				return false, err
+			}
+
+			err = genSortableContent(gen, method, g)
 			if err != nil {
 				return false, err
 			}

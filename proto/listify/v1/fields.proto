@@ -40,16 +40,16 @@ message Filter {
   }
 }
 
-message FilterClauses {
-  repeated FilterClause clauses = 1;
+message SqlClauses{
+  repeated SqlClause clauses = 1;
 }
 
-message FilterClause {
-  string                  predicate = 1;
-  repeated FilterArgument arguments = 2;
+message SqlClause {
+  string               predicate = 1;
+  repeated SqlArgument arguments = 2;
 }
 
-message FilterArgument {
+message SqlArgument {
   oneof kind {
     double   double    =  1;
     fixed32  fixed32   =  2;

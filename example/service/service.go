@@ -103,11 +103,11 @@ func (s *Service) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequest)
 				return nil, status.Error(codes.InvalidArgument, "invalid page token")
 			}
 
-			c := &listify.FilterClause{
+			c := &listify.SqlClause{
 				Predicate: "created >= ?",
-				Arguments: []*listify.FilterArgument{
+				Arguments: []*listify.SqlArgument{
 					{
-						Kind: &listify.FilterArgument_String_{
+						Kind: &listify.SqlArgument_String_{
 							String_: string(decoded),
 						},
 					},

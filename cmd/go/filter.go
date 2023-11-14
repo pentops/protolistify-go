@@ -475,11 +475,11 @@ func genFilterableContent(gen *protogen.Plugin, method *protogen.Method, g *prot
 }
 
 func genFilterSqlMethods(gen *protogen.Plugin, g *protogen.GeneratedFile, msg *protogen.Message) {
-	g.P("func (r *", msg.GoIdent.GoName, ") GetFilterClauses() (*", listifyPackage.Ident("FilterClauses"), "){")
-	g.P("resp := &", listifyPackage.Ident("FilterClauses"), "{}")
+	g.P("func (r *", msg.GoIdent.GoName, ") GetFilterClauses() (*", listifyPackage.Ident("SqlClauses"), "){")
+	g.P("resp := &", listifyPackage.Ident("SqlClauses"), "{}")
 	g.P()
 	g.P("for _, filter := range r.Filters {")
-	g.P("clause := &", listifyPackage.Ident("FilterClause"), "{}")
+	g.P("clause := &", listifyPackage.Ident("SqlClause"), "{}")
 	g.P()
 	g.P("if filter.GetRange() != nil {")
 
@@ -500,35 +500,35 @@ func genFilterSqlMethods(gen *protogen.Plugin, g *protogen.GeneratedFile, msg *p
 	g.P("case *", listifyPackage.Ident("Range_Date"), ":")
 	g.P("if k.Date.Min != nil && k.Date.Max != nil {")
 	g.P("clause.Predicate = ", fmtPackage.Ident("Sprintf"), "(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)")
-	g.P("arg1 := &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident("FilterArgument_String_"), "{String_: k.Date.Min.Value}}")
-	g.P("arg2 := &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident("FilterArgument_String_"), "{String_: k.Date.Max.Value}}")
+	g.P("arg1 := &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident("SqlArgument_String_"), "{String_: k.Date.Min.Value}}")
+	g.P("arg2 := &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident("SqlArgument_String_"), "{String_: k.Date.Max.Value}}")
 	g.P("clause.Arguments = append(clause.Arguments, arg1, arg2)")
 	g.P("} else {")
 	g.P("if k.Date.Min != nil {")
 	g.P("clause.Predicate = ", fmtPackage.Ident("Sprintf"), "(`%s >= ?`, filter.Field)")
-	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident("FilterArgument_String_"), "{String_: k.Date.Min.Value}})")
+	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident("SqlArgument_String_"), "{String_: k.Date.Min.Value}})")
 	g.P("}")
 	g.P("if k.Date.Max != nil {")
 	g.P("clause.Predicate = ", fmtPackage.Ident("Sprintf"), "(`%s <= ?`, filter.Field)")
-	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident("FilterArgument_String_"), "{String_: k.Date.Max.Value}})")
+	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident("SqlArgument_String_"), "{String_: k.Date.Max.Value}})")
 	g.P("}")
 	g.P("}")
 
 	g.P("case *", listifyPackage.Ident("Range_Timestamp"), ":")
 	g.P("if k.Timestamp.Min != nil && k.Timestamp.Max != nil {")
 	g.P("clause.Predicate = ", fmtPackage.Ident("Sprintf"), "(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)")
-	g.P("arg1 := &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident("FilterArgument_String_"), "{String_: k.Timestamp.Min.AsTime().Format(", timePackage.Ident("RFC3339Nano"), ")}}")
-	g.P("arg2 := &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident("FilterArgument_String_"), "{String_: k.Timestamp.Max.AsTime().Format(", timePackage.Ident("RFC3339Nano"), ")}}")
+	g.P("arg1 := &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident("SqlArgument_String_"), "{String_: k.Timestamp.Min.AsTime().Format(", timePackage.Ident("RFC3339Nano"), ")}}")
+	g.P("arg2 := &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident("SqlArgument_String_"), "{String_: k.Timestamp.Max.AsTime().Format(", timePackage.Ident("RFC3339Nano"), ")}}")
 	g.P("clause.Arguments = append(clause.Arguments, arg1, arg2)")
 	g.P("} else {")
 	g.P("if k.Timestamp.Min != nil {")
 	g.P("clause.Predicate = ", fmtPackage.Ident("Sprintf"), "(`%s >= ?`, filter.Field)")
 	g.P("clause.Predicate = ", fmtPackage.Ident("Sprintf"), "(`%s >= ?`, filter.Field)")
-	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident("FilterArgument_String_"), "{String_: k.Timestamp.Min.AsTime().Format(", timePackage.Ident("RFC3339Nano"), ")}})")
+	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident("SqlArgument_String_"), "{String_: k.Timestamp.Min.AsTime().Format(", timePackage.Ident("RFC3339Nano"), ")}})")
 	g.P("}")
 	g.P("if k.Timestamp.Max != nil {")
 	g.P("clause.Predicate = ", fmtPackage.Ident("Sprintf"), "(`%s <= ?`, filter.Field)")
-	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident("FilterArgument_String_"), "{String_: k.Timestamp.Max.AsTime().Format(", timePackage.Ident("RFC3339Nano"), ")}})")
+	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident("SqlArgument_String_"), "{String_: k.Timestamp.Max.AsTime().Format(", timePackage.Ident("RFC3339Nano"), ")}})")
 	g.P("}")
 	g.P("}")
 
@@ -536,7 +536,7 @@ func genFilterSqlMethods(gen *protogen.Plugin, g *protogen.GeneratedFile, msg *p
 
 	g.P("} else {")
 	g.P(`clause.Predicate = `, fmtPackage.Ident("Sprintf"), `("%s = ?", filter.Field)`)
-	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident("FilterArgument_String_"), "{String_: filter.GetValue()}})")
+	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident("SqlArgument_String_"), "{String_: filter.GetValue()}})")
 	g.P("}")
 	g.P()
 	g.P("resp.Clauses = append(resp.Clauses, clause)")
@@ -551,17 +551,17 @@ func genFilterStatmentMethodsCase(g *protogen.GeneratedFile, name, minComp, maxC
 	g.P("case *", listifyPackage.Ident(fmt.Sprintf("Range_%s", name)), ":")
 	g.P(fmt.Sprintf("if k.%s.Min != nil && k.%s.Max != nil {", name, name))
 	g.P("clause.Predicate = ", fmtPackage.Ident("Sprintf"), "(`%s >= ? AND %s <= ?`, filter.Field, filter.Field)")
-	g.P("arg1 := &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident(fmt.Sprintf("FilterArgument_%s", name)), fmt.Sprintf("{%s: k.%s.%s}", name, name, minComp), "}")
-	g.P("arg2 := &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident(fmt.Sprintf("FilterArgument_%s", name)), fmt.Sprintf("{%s: k.%s.%s}", name, name, maxComp), "}")
+	g.P("arg1 := &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident(fmt.Sprintf("SqlArgument_%s", name)), fmt.Sprintf("{%s: k.%s.%s}", name, name, minComp), "}")
+	g.P("arg2 := &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident(fmt.Sprintf("SqlArgument_%s", name)), fmt.Sprintf("{%s: k.%s.%s}", name, name, maxComp), "}")
 	g.P("clause.Arguments = append(clause.Arguments, arg1, arg2)")
 	g.P("} else {")
 	g.P(fmt.Sprintf("if k.%s.Min != nil {", name))
 	g.P("clause.Predicate = ", fmtPackage.Ident("Sprintf"), "(`%s >= ?`, filter.Field)")
-	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident(fmt.Sprintf("FilterArgument_%s", name)), fmt.Sprintf("{%s: k.%s.%s}", name, name, minComp), "})")
+	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident(fmt.Sprintf("SqlArgument_%s", name)), fmt.Sprintf("{%s: k.%s.%s}", name, name, minComp), "})")
 	g.P("}")
 	g.P(fmt.Sprintf("if k.%s.Max != nil {", name))
 	g.P("clause.Predicate = ", fmtPackage.Ident("Sprintf"), "(`%s <= ?`, filter.Field)")
-	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("FilterArgument"), "{Kind: &", listifyPackage.Ident(fmt.Sprintf("FilterArgument_%s", name)), fmt.Sprintf("{%s: k.%s.%s}", name, name, maxComp), "})")
+	g.P("clause.Arguments = append(clause.Arguments, &", listifyPackage.Ident("SqlArgument"), "{Kind: &", listifyPackage.Ident(fmt.Sprintf("SqlArgument_%s", name)), fmt.Sprintf("{%s: k.%s.%s}", name, name, maxComp), "})")
 	g.P("}")
 	g.P("}")
 }
@@ -574,59 +574,59 @@ func genFilterables(gen *protogen.Plugin, msg *protogen.Message, g *protogen.Gen
 		if ok && fieldAnnotations != nil {
 			switch field.Desc.Kind().String() {
 			case "double":
-				if fieldAnnotations.GetDouble() != nil && fieldAnnotations.GetDouble().Filterable {
+				if fieldAnnotations.GetDouble() != nil && fieldAnnotations.GetDouble().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidDouble"
 				}
 			case "float":
-				if fieldAnnotations.GetFloat() != nil && fieldAnnotations.GetFloat().Filterable {
+				if fieldAnnotations.GetFloat() != nil && fieldAnnotations.GetFloat().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidFloat"
 				}
 			case "int32":
-				if fieldAnnotations.GetInt32() != nil && fieldAnnotations.GetInt32().Filterable {
+				if fieldAnnotations.GetInt32() != nil && fieldAnnotations.GetInt32().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidInt32"
 				}
 			case "sint32":
-				if fieldAnnotations.GetSint32() != nil && fieldAnnotations.GetSint32().Filterable {
+				if fieldAnnotations.GetSint32() != nil && fieldAnnotations.GetSint32().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidSint32"
 				}
 			case "sfixed32":
-				if fieldAnnotations.GetSfixed32() != nil && fieldAnnotations.GetSfixed32().Filterable {
+				if fieldAnnotations.GetSfixed32() != nil && fieldAnnotations.GetSfixed32().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidSfixed32"
 				}
 			case "int64":
-				if fieldAnnotations.GetInt64() != nil && fieldAnnotations.GetInt64().Filterable {
+				if fieldAnnotations.GetInt64() != nil && fieldAnnotations.GetInt64().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidInt64"
 				}
 			case "sint64":
-				if fieldAnnotations.GetSint64() != nil && fieldAnnotations.GetSint64().Filterable {
+				if fieldAnnotations.GetSint64() != nil && fieldAnnotations.GetSint64().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidSint64"
 				}
 			case "sfixed64":
-				if fieldAnnotations.GetSfixed64() != nil && fieldAnnotations.GetSfixed64().Filterable {
+				if fieldAnnotations.GetSfixed64() != nil && fieldAnnotations.GetSfixed64().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidSfixed64"
 				}
 			case "uint32":
-				if fieldAnnotations.GetUint32() != nil && fieldAnnotations.GetUint32().Filterable {
+				if fieldAnnotations.GetUint32() != nil && fieldAnnotations.GetUint32().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidUint32"
 				}
 			case "fixed32":
-				if fieldAnnotations.GetFixed32() != nil && fieldAnnotations.GetFixed32().Filterable {
+				if fieldAnnotations.GetFixed32() != nil && fieldAnnotations.GetFixed32().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidFixed32"
 				}
 			case "uint64":
-				if fieldAnnotations.GetUint64() != nil && fieldAnnotations.GetUint64().Filterable {
+				if fieldAnnotations.GetUint64() != nil && fieldAnnotations.GetUint64().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidUint64"
 				}
 			case "fixed64":
-				if fieldAnnotations.GetFixed64() != nil && fieldAnnotations.GetFixed64().Filterable {
+				if fieldAnnotations.GetFixed64() != nil && fieldAnnotations.GetFixed64().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidFixed64"
 				}
 			case "bool":
-				if fieldAnnotations.GetBool() != nil && fieldAnnotations.GetBool().Filterable {
+				if fieldAnnotations.GetBool() != nil && fieldAnnotations.GetBool().Filtering.Filterable {
 					filterables[field.Desc.TextName()] = "ListifyFilter_ValidBool"
 				}
 			case "enum":
-				if fieldAnnotations.GetEnum() != nil && fieldAnnotations.GetEnum().Filterable {
+				if fieldAnnotations.GetEnum() != nil && fieldAnnotations.GetEnum().Filtering.Filterable {
 					valids := map[string]struct{}{}
 					for _, v := range field.Enum.Values {
 						valids[string(v.Desc.Name())] = struct{}{}
@@ -654,23 +654,23 @@ func genFilterables(gen *protogen.Plugin, msg *protogen.Message, g *protogen.Gen
 				if fieldAnnotations.GetString_() != nil {
 					if fieldAnnotations.GetString_().GetForeignKey() != nil {
 						if fieldAnnotations.GetString_().GetForeignKey().GetUniqueString() != nil &&
-							fieldAnnotations.GetString_().GetForeignKey().GetUniqueString().Filterable {
+							fieldAnnotations.GetString_().GetForeignKey().GetUniqueString().Filtering.Filterable {
 							filterables[field.Desc.TextName()] = "ListifyFilter_ValidUniqueString"
 						}
 
 						if fieldAnnotations.GetString_().GetForeignKey().GetUuid() != nil &&
-							fieldAnnotations.GetString_().GetForeignKey().GetUuid().Filterable {
+							fieldAnnotations.GetString_().GetForeignKey().GetUuid().Filtering.Filterable {
 							filterables[field.Desc.TextName()] = "ListifyFilter_ValidUUID"
 						}
 					}
 
-					if fieldAnnotations.GetString_().GetDate() != nil && fieldAnnotations.GetString_().GetDate().Filterable {
+					if fieldAnnotations.GetString_().GetDate() != nil && fieldAnnotations.GetString_().GetDate().Filtering.Filterable {
 						filterables[field.Desc.TextName()] = "ListifyFilter_ValidDate"
 					}
 				}
 			case "message":
 				if field.Desc.Message().FullName() == "google.protobuf.Timestamp" {
-					if fieldAnnotations.GetTimestamp() != nil && fieldAnnotations.GetTimestamp().Filterable {
+					if fieldAnnotations.GetTimestamp() != nil && fieldAnnotations.GetTimestamp().Filtering.Filterable {
 						filterables[field.Desc.TextName()] = "ListifyFilter_ValidTimestamp"
 					}
 				}
@@ -692,7 +692,7 @@ func genFilterables(gen *protogen.Plugin, msg *protogen.Message, g *protogen.Gen
 	for _, oneof := range msg.Oneofs {
 		oneofAnnotations, ok := proto.GetExtension(oneof.Desc.Options(), listify.E_OneofRules).(*listify.OneofRulesOptions)
 		if ok && oneofAnnotations != nil {
-			if oneofAnnotations.Filterable {
+			if oneofAnnotations.Filtering.Filterable {
 				valids := map[string]struct{}{}
 				for _, v := range oneof.Fields {
 					valids[string(v.Desc.Message().Name())] = struct{}{}

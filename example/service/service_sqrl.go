@@ -81,6 +81,11 @@ func (s *ServiceSqrl) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequ
 		return nil, err
 	}
 
+	err = req.ValidateSorts()
+	if err != nil {
+		return nil, err
+	}
+
 	var total int64
 	err = s.db.Transact(ctx, nil, func(ctx context.Context, tx sqrlx.Transaction) error {
 		total, err = s.totalWidgets(ctx, tx)
@@ -95,6 +100,7 @@ func (s *ServiceSqrl) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequ
 	}
 
 	filters := req.GetFilterClauses()
+	sorts := req.GetSortClauses()
 	limit := int64(s.defaultPageSize)
 
 	if req.Page != nil {
@@ -107,11 +113,11 @@ func (s *ServiceSqrl) ListWidgets(ctx context.Context, req *sspb.ListWidgetsRequ
 				return nil, status.Error(codes.InvalidArgument, "invalid page token")
 			}
 
-			c := &listify.FilterClause{
+			c := &listify.SqlClause{
 				Predicate: "created >= ?",
-				Arguments: []*listify.FilterArgument{
+				Arguments: []*listify.SqlArgument{
 					{
-						Kind: &listify.FilterArgument_String_{
+						Kind: &listify.SqlArgument_String_{
 							String_: string(decoded),
 						},
 					},

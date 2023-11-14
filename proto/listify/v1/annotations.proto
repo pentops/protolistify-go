@@ -11,7 +11,8 @@ extend google.protobuf.MethodOptions {
 }
 
 message MethodOptions {
-  bool enable = 1;
+  bool enable       = 1;
+  string rank_field = 2;
 }
 
 extend google.protobuf.FieldOptions {
@@ -23,7 +24,9 @@ extend google.protobuf.OneofOptions {
 }
 
 message OneofRulesOptions {
-  bool filterable = 1;
+  string field_override = 1;
+
+  FilteringOptions filtering = 10;
 }
 
 message FieldRulesOptions {
@@ -49,13 +52,31 @@ message FieldRulesOptions {
   }
 }
 
-message NumericRules {
+message FilteringOptions {
   bool filterable = 1;
-  bool sortable   = 2;
+  bool exclude    = 2;
+}
+
+message SortingOptions {
+  bool sortable     = 1;
+  bool default_sort = 2;
+}
+
+message SearchingOptions {
+  bool searchable = 1;
+}
+
+message NumericRules {
+  string field_override = 1;
+
+  FilteringOptions filtering = 10;
+  SortingOptions   sorting   = 11;
 }
 
 message BoolRules {
-  bool filterable = 1;
+  string field_override = 1;
+
+  FilteringOptions filtering = 10;
 }
 
 message StringRules {
@@ -67,11 +88,15 @@ message StringRules {
 }
 
 message OpenTextRules {
-  bool searchable = 1;
+  string field_override = 1;
+
+  SearchingOptions searching = 10;
 }
 
 message DateRules {
-  bool filterable = 1;
+  string field_override = 1;
+
+  FilteringOptions filtering = 10;
 }
 
 message ForeignKeyRules {
@@ -82,18 +107,26 @@ message ForeignKeyRules {
 }
 
 message UniqueStringRules {
-  bool filterable = 1;
+  string field_override = 1;
+
+  FilteringOptions filtering = 10;
 }
 
 message UuidRules {
-  bool filterable = 1;
+  string field_override = 1;
+
+  FilteringOptions filtering = 10;
 }
 
 message EnumRules {
-  bool filterable = 1;
+  string field_override = 1;
+
+  FilteringOptions filtering = 10;
 }
 
 message TimestampRules {
-  bool filterable = 1;
-  bool sortable   = 2;
+  string field_override = 1;
+
+  FilteringOptions filtering = 10;
+  SortingOptions   sorting   = 11;
 }
